@@ -1,0 +1,124 @@
+import constants
+import shutil
+import datetime
+import openpyxl
+import win32com.client as win32
+
+class paperwork:
+	now = datetime.datetime.now()
+	today = str(now.year)+str(now.month)+str(now.day)
+	
+	def __init__(self):
+		""" Initialise the variables """
+		self.chrq_num = input("CHRQ number:")
+		self.sf_num = input("SF number:")
+		self.title = input("Title:")
+		self.description = input("Description:")
+		self.qc_num = input("QC number:")
+		self.bespoke = input("Bespoke code? (Yy/Nn)").upper()
+		self.code = {}
+		while True:
+			self.code_name = input("Code name:")
+			if self.code_name.lower() == "enough":
+				break
+			self.code_version = input("Code version:")
+			self.code[self.code_name] = self.code_version;
+	
+	'''
+	def print_instance(self):
+		print(self.chrq_num)
+		print(self.sf_num)
+		print(self.title)
+		print(self.bespoke)
+		print(self.code)
+	
+	'''
+	
+	def generate_utp(self):
+		"""Generates UTP document"""
+		utp_file_name = r'CR_'+ self.chrq_num + self.today +'_'+constants.trga+'.xlsx'
+		
+		#Prepare file locally
+		utp_file_temp = constants.temp_dir + utp_file_name
+		shutil.copy(constants.utp_base_document,utp_file_temp)
+		wb = openpyxl.load_workbook(filename = utp_file_temp)
+		
+		ws = wb.get_sheet_by_name("Sheet1")
+		ws.cell(row=7,column=4).value=constants.trga
+
+		wb.save(utp_file_temp)
+		
+		#Copy to shared directory
+		shutil.copy(utp_file_temp,constants.utp_path)
+		
+	def generate_code_review(self):
+		"""Generates code review document"""
+		code_review_file_name = r'Code review - CR '+ self.chrq_num + '_' + self.title + self.today + '.xlsx'
+		
+		#Prepare file locally
+		code_review_file_temp = constants.temp_dir + code_review_file_name 
+		shutil.copy(constants.code_review_base_document,code_review_file_name)
+		wb = openpyxl.load_workbook(filenmae = code_review_file_name)
+		
+		ws = wb.get_sheet_by_name("Sheet1")
+		ws.cell(row=7, column=4).value=constants.trga
+
+		wb.save(code_review_file_temp)
+		
+		#Copy to shared directory
+		shutil.copy(code_review_file_temp,constants.code_review_path)
+
+class mailer:
+	def __init__(self,paperwork_object):
+		self.title = ''
+		self.body = ''
+		self.to = ''
+		self.cc = ''
+		self.paperwork_object = paperwork_object
+		
+	def generate_mail(self,subject,body,to,cc):
+		outlook = win32.Dispatch('outlook.application')
+		mail = outlook.CreateItem(0)
+		mail.To = to
+		mail.Cc = cc
+		mail.Subject = subject
+		#mail.HtmlBody = body
+		mail.Body = body
+		mail.save()
+		#mail.display(True)
+		
+	def chrq_approval_mail(self):
+		self.subject = 'CHRQ ' + self.paperwork_object.chrq_num
+		self.body = 'Hi Abhay,\n\
+	CHRQ ' + self.paperwork_object.chrq_num + ' is created for ' + self.paperwork_object.title + '\n\
+	Could you please approve this change and set the status to INP for me to proceed'
+		print(self.body)
+		self.to = 'abhiyanta.mahesh@gmail.com'
+		self.cc = 'mahesh291289@gmail.com'
+		self.generate_mail(self.subject,self.body,self.to,self.cc)
+		
+	def chrq_sys_mail(self):
+		self.title = 'CHRQ ' + self.paperwork_object.chrq_num
+		self.body = 'Hi Abhay,\n\
+	Can you please SYS the CHRQ ' + self.paperwork_object.chrq_num + '-' + self.paperwork_object.title
+		self.to = ''
+		self.cc = ''
+		self.generate_mail(self.subject,self.body,self.to,self.cc)
+		
+	def patch_mail(self):
+		self.title = ''
+		self.body = ''
+		self.to = ''
+		self.cc = ''
+		
+	def scf_mail(self):
+		self.title = ''
+		self.body = ''
+		self.to = ''
+		self.cc = ''
+		
+	def com_request_mail(self):
+		self.title = ''
+		self.body = ''
+		self.to = ''
+		self.cc = ''
